@@ -1,6 +1,6 @@
 [project]
 name = "pydantic-faker"
-version = "0.1.0"
+version = "0.2.0"
 description = "A CLI tool to generate fake data from Pydantic models."
 authors = [
     { name = "Viktor Andriichuk", email = "v.andriichuk@gmail.com" },
@@ -22,7 +22,8 @@ dependencies = [
     "typer>=0.9.0,<2.0.0",
     "pydantic>=2.0.0,<4.0.0",
     "faker>=37.0.0,<38.0.0",
-    "rich>=13.0.0,<15.0.0"
+    "rich>=13.0.0,<15.0.0",
+    "pydantic[email]>=2.0.0,<4.0.0",
 ]
 
 [project.urls]

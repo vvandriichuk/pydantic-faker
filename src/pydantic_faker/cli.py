@@ -42,11 +42,33 @@ def generate(
             show_default=False,
         ),
     ] = None,
+    faker_locale: Annotated[
+        str | None,
+        typer.Option(
+            "--faker-locale",
+            "-l",
+            help="Locale to use for Faker (e.g., 'en_US', 'ru_RU', 'ja_JP'). If not provided, Faker's default is used.",
+            show_default=False,
+        ),
+    ] = None,
+    seed: Annotated[
+        int | None,
+        typer.Option(
+            "--seed",
+            "-s",
+            help="Seed for the random number generator (for reproducible results).",
+            show_default=False,
+        ),
+    ] = None,
 ) -> None:
     """
     Generates fake data based on a Pydantic model and outputs it as JSON.
     """
     typer.echo(f"⏳ Generating {count} instance(s) for model: {model_path}")
+    if faker_locale:
+        typer.echo(f"🌍 Using Faker locale: {faker_locale}")
+    if seed is not None:
+        typer.echo(f"🌱 Using random seed: {seed}")
 
     try:
         pydantic_model_class = load_pydantic_model(model_path)
@@ -54,11 +76,14 @@ def generate(
     except typer.Exit:
         raise
 
-        # TODO: Implement fake data generation using pydantic_model_class
     fake_data_list = []
     for _ in range(count):
         try:
-            single_fake_data = generate_fake_data_for_model(pydantic_model_class)
+            single_fake_data = generate_fake_data_for_model(
+                model_class=pydantic_model_class,
+                faker_locale=faker_locale,
+                seed=seed,
+            )
             fake_data_list.append(single_fake_data)
         except Exception as e:
             typer.secho(
@@ -82,7 +107,7 @@ def generate(
     typer.echo("🎉 Generation complete!")
 
 
-@app.command(hidden=True)
+@app.command(hidden=True)  # Скрываем команду, пока она не реализована
 def serve(
     model_path: Annotated[str, typer.Argument(help="Path to Pydantic model.")],
 ) -> None:

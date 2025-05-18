@@ -17,7 +17,9 @@ Inspired by the need for a simple, CLI-first way to leverage Pydantic's schema d
 *   **Basic Type Generation**: Supports common Python types (`int`, `str`, `float`, `bool`, `UUID`, `datetime`, `date`, `time`).
 *   **Nested Structures**: Handles nested Pydantic models, `List[T]`, `Dict[str, T]`, and `Optional[T]`.
 *   **JSON Output**: Outputs generated data in JSON format, either to stdout or a file.
-*   *(Upcoming)* Faker Integration: More realistic and varied data using the Faker library.
+*   **Faker Integration**: Uses Faker library to generate more realistic data for common field names (e.g., name, email, address).
+*   **Locale Support**: `--faker-locale` option to generate data in specific languages/regions.
+*   **Seedable Generation**: `--seed` option for reproducible data generation.
 *   *(Upcoming)* Constraint Support: Respect Pydantic `Field` constraints.
 *   *(Upcoming)* Mock API Server: Instantly serve your generated data via a local HTTP server.
 
@@ -77,6 +79,12 @@ To generate 5 instances of ComplexOrder and save to a file named orders.json:
 pydantic-faker generate my_models:ComplexOrder --count 5 --output-file orders.json
 ```
 
+To generate data using a specific locale and seed:
+
+```bash
+pydantic-faker generate my_models:SimpleUser --faker-locale ru_RU --seed 123
+```
+
 You should see output similar to this (values will be random):
 
 ```json
@@ -84,13 +92,13 @@ You should see output similar to this (values will be random):
 [
   {
     "id": 123,
-    "name": "random_string_456",
+    "name": "Иван Петров",
     "is_active": true,
     "uuid": "a1b2c3d4-e5f6-7890-1234-567890abcdef",
     "created_at": "2023-10-27T10:30:00+00:00",
     "birth_date": "2023-01-15",
     "wakeup_time": "08:00:00",
-    "email": "random_string_789",
+    "email": "ivan.petrov@example.ru",
     "rating": null
   }
 ]
@@ -115,6 +123,10 @@ pydantic-faker generate [OPTIONS] MODEL_PATH
 
 - `-o, --output-file PATH`: The file path where the generated JSON data should be saved. If this option is not provided, the JSON data will be printed to the standard output (stdout).
 
+- `-l, --faker-locale TEXT`: Locale to use for Faker (e.g., 'en_US', 'ru_RU', 'ja_JP'). If not provided, Faker's default is used.
+
+- `-s, --seed INTEGER`: Seed for the random number generator (for reproducible results).
+
 - `--install-completion`: Install command-line completion for your current shell.
 
 - `--show-completion`: Show the command-line completion script for your current shell.
@@ -123,9 +135,9 @@ pydantic-faker generate [OPTIONS] MODEL_PATH
 
 (The `serve` command is planned for a future release and is currently hidden from general help.)
 
-## How it Works (v0.1.0)
+## How it Works (v0.2.0 Development)
 
-For the current version (0.1.0), pydantic-faker operates by:
+For the current version in development (v0.2.0), pydantic-faker operates by:
 
 1. **Dynamic Model Loading**: It takes the MODEL_PATH string, splits it into a module path and class name, and dynamically imports your Pydantic model class. It ensures that the loaded class is indeed a subclass of Pydantic's BaseModel.
 
@@ -136,12 +148,12 @@ For the current version (0.1.0), pydantic-faker operates by:
    - **Basic Types**:
      - `int`: A random integer.
      - `float`: A random float.
-     - `str`: A generic random string (e.g., "random_string_123").
+     - `str`: If the field name matches a common pattern (e.g., "name", "email", "address"), data is generated using the appropriate Faker provider. Otherwise, a random sentence is generated.
      - `bool`: Randomly True or False.
 
    - **Special Python Types**:
-     - `uuid.UUID`: A new, randomly generated Version 4 UUID, converted to a string.
-     - `datetime.datetime`: A recent datetime object (UTC, timezone-aware), converted to an ISO 8601 string.
+     - `uuid.UUID`: A Faker-generated Version 4 UUID (seedable), converted to a string.
+     - `datetime.datetime`: A Faker-generated recent datetime object (UTC, timezone-aware, seedable), converted to an ISO 8601 string.
      - `datetime.date`: A recent date object, converted to an ISO 8601 string.
      - `datetime.time`: A random time object, converted to an ISO 8601 string.
 
@@ -158,7 +170,7 @@ For the current version (0.1.0), pydantic-faker operates by:
 
 The generated data for each instance is collected into a Python dictionary. If multiple instances (--count > 1) are requested, a list of these dictionaries is created. Finally, this list is serialized to JSON and either printed to stdout or written to the specified output file.
 
-Note: Version 0.1.0 does not yet incorporate the Faker library for more diverse/realistic data, nor does it consider constraints or examples defined in Pydantic Field objects. These features are planned for upcoming releases.
+Note: The current version includes Faker integration for common field names, but does not yet respect constraints defined in Pydantic Field objects. This feature is planned for the complete v0.2.0 release.
 
 ## Contributing
 
@@ -185,12 +197,15 @@ We use `ruff` for comprehensive linting and formatting, and `mypy` for static ty
 
 We have exciting plans for pydantic-faker! Here's a glimpse of what's coming:
 
-### v0.2.0: Smarter Faker & Basic Constraints
+### v0.2.0: Smarter Faker & Basic Constraints (Partially Implemented)
 
-- Deep integration with the Faker library for generating a wide variety of realistic data types (names, addresses, company names, lorem ipsum, etc.).
-- Ability to respect basic Pydantic Field constraints (e.g., min_length, max_length for strings; gt, lt, ge, le for numbers; min_items, max_items for lists).
-- An option to provide a --seed for reproducible random data generation.
-- Support for Faker locales (--faker-locale) to generate data specific to a language/region.
+* **Implemented:**
+  * Integration with the [Faker](https://faker.readthedocs.io/) library for generating realistic data for common field names.
+  * `--seed` option for reproducible random data generation.
+  * `--faker-locale` option for localized data generation.
+* **Planned for v0.2.0 Completion:**
+  * Ability to respect basic Pydantic `Field` constraints (e.g., `min_length`, `max_length` for strings; `gt`, `lt`, `ge`, `le` for numbers; `min_items`, `max_items` for lists).
+  * (Optional) More advanced type-to-Faker-provider mappings (beyond field names).
 
 ### v0.3.0: Hello, Server!
 
@@ -217,12 +232,3 @@ Your feedback, feature requests, and contributions are highly encouraged to help
 ## License
 
 Distributed under the MIT License. See LICENSE for more information.
-
-To create the LICENSE file:
-
-1. Create a new file named LICENSE (no extension) in the root of your project.
-2. Go to https://opensource.org/licenses/MIT.
-3. Copy the license text.
-4. Paste it into your LICENSE file.
-5. Replace [year] with the current year (e.g., 2024).
-6. Replace [fullname] with your name (e.g., Viktor Andriichuk).
