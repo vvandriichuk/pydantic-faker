@@ -1,0 +1,132 @@
+[project]
+name = "pydantic-faker"
+version = "0.1.0"
+description = "A CLI tool to generate fake data from Pydantic models."
+authors = [
+    { name = "Viktor Andriichuk", email = "v.andriichuk@gmail.com" },
+]
+license = { text = "MIT" }
+readme = "README.md"
+requires-python = ">=3.12"
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Testing :: Mocking",
+    "Topic :: Utilities",
+    "Typing :: Typed",
+]
+dependencies = [
+    "typer>=0.9.0,<2.0.0",
+    "pydantic>=2.0.0,<4.0.0",
+    "faker>=37.0.0,<38.0.0",
+    "rich>=13.0.0,<15.0.0"
+]
+
+[project.urls]
+Homepage = "https://github.com/vvandriichuk/pydantic-faker"
+Repository = "https://github.com/vvandriichuk/pydantic-faker"
+ Issues = "https://github.com/vvandriichuk/pydantic-faker/issues"
+
+[project.scripts]
+pydantic-faker = "pydantic_faker.cli:app"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/pydantic_faker"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3.5",
+    "pre-commit>=4.1.0",
+    "mypy>=1.15.0",
+    "ruff>=0.11.0",
+    "types-requests",
+    "pyright>=1.1.398",
+]
+
+[tool.ruff]
+fix = true
+line-length = 120
+target-version = "py312"
+
+[tool.ruff.lint]
+dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
+select = ["E", "W", "F", "I", "UP", "C4", "B", "A", "COM", "LOG", "PT", "Q", "RET", "SIM", "TID", "ARG", "RUF"] # Выбери нужные правила
+ignore = []
+fixable = ["ALL"]
+unfixable = []
+exclude = [
+    ".bzr",
+    ".direnv",
+    ".eggs",
+    ".git",
+    ".git-rewrite",
+    ".hg",
+    ".mypy_cache",
+    ".nox",
+    ".pants.d",
+    ".pytype",
+    ".ruff_cache",
+    ".svn",
+    ".tox",
+    ".venv",
+    "__pypackages__",
+    "_build",
+    "buck-out",
+    "build",
+    "dist",
+    "node_modules",
+    "database/versions",
+    "venv",
+    ".session",
+    "logs",
+    ".lock",
+    ".toml",
+]
+
+[tool.ruff.format]
+quote-style = "double"
+
+[tool.ruff.lint.mccabe]
+max-complexity = 20
+
+[tool.ruff.lint.flake8-bugbear]
+extend-immutable-calls = ["fastapi.Depends", "fastapi.Query", "fastapi.Form"]
+
+[tool.ruff.lint.flake8-annotations]
+suppress-dummy-args = true
+
+[tool.ruff.lint.pep8-naming]
+classmethod-decorators = ["pydantic.validator", "pydantic.root_validator", "pydantic.validate_arguments"]
+
+[tool.mypy]
+python_version = "3.12"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+disallow_untyped_decorators = true
+no_implicit_optional = true
+strict_optional = true
+exclude = ['tests']
+
+[tool.pyright]
+include = ["src"]
+exclude = ["**/__pycache__", ".venv"]
+reportMissingImports = true
+pythonVersion = "3.12"
+reportUnusedImport = true
+reportUnusedClass = true
+reportUnusedFunction = true
+reportUnusedVariable = true
+reportDuplicateImport = true
+reportOptionalMemberAccess = false
+reportPrivateImportUsage = false
+reportUnnecessaryIsInstance = false
