@@ -1,10 +1,12 @@
+import random
+
 import pytest
 from faker import Faker
 from pydantic import BaseModel
 
 from pydantic_faker.core import generate_fake_data_for_model, get_faker_instance, load_pydantic_model
 
-from .helpers import SimpleTestModel
+from .helpers import ConstrainedListsModel, ConstrainedNumbersModel, ConstrainedStringsModel, SimpleTestModel
 
 
 def test_load_pydantic_model_success():
@@ -75,7 +77,7 @@ def test_get_faker_instance_with_seed():
 
 
 def test_generate_fake_data_uses_faker_names():
-    """Check if Faker is used for specific field names."""
+    """Check if Faker is used for specific field names and that unmapped str fields are also deterministic with seed."""
 
     class NameEmailModel(BaseModel):
         name: str
@@ -83,16 +85,34 @@ def test_generate_fake_data_uses_faker_names():
         company: str
         random_text: str
 
-    data = generate_fake_data_for_model(NameEmailModel, seed=123)
+    seed_value = 123
+
+    data1 = generate_fake_data_for_model(NameEmailModel, seed=seed_value)
+
+    data2 = generate_fake_data_for_model(NameEmailModel, seed=seed_value)
+
+    assert data1["name"] == data2["name"]
+    assert data1["email"] == data2["email"]
+    assert data1["company"] == data2["company"]
+
+    assert data1["random_text"] == data2["random_text"]
+
+    assert isinstance(data1["random_text"], str)
+    assert len(data1["random_text"]) > 0
+    assert data1["random_text"] != data1["name"]
+    assert not data1["random_text"].startswith("random_string_")
 
     faker_ref = Faker()
-    Faker.seed(123)
-    faker_ref.seed_instance(123)
+    Faker.seed(seed_value)
+    faker_ref.seed_instance(seed_value)
 
-    assert data["name"] == faker_ref.name()
-    assert data["email"] == faker_ref.email()
-    assert data["company"] == faker_ref.company()
-    assert data["random_text"] == faker_ref.sentence(nb_words=3)
+    expected_name = faker_ref.name()
+    expected_email = faker_ref.email()
+    expected_company = faker_ref.company()
+
+    assert data1["name"] == expected_name
+    assert data1["email"] == expected_email
+    assert data1["company"] == expected_company
 
 
 def test_generate_fake_data_deterministic_with_seed():
@@ -103,3 +123,60 @@ def test_generate_fake_data_deterministic_with_seed():
 
     data3 = generate_fake_data_for_model(SimpleTestModel, seed=seed + 1, faker_locale="en_US")
     assert data1 != data3, "Data generated with different seeds should differ"
+
+
+def test_generate_int_constraints():
+    for _ in range(10):
+        data = generate_fake_data_for_model(ConstrainedNumbersModel, seed=random.randint(1, 10000))
+        assert data["int_gt"] > 10
+        assert data["int_ge"] >= 5
+        assert data["int_lt"] < 20
+        assert data["int_le"] <= 15
+        assert 100 < data["int_gt_lt"] < 110
+        assert 50 <= data["int_ge_le"] <= 55
+        assert data["int_multiple_of"] % 7 == 0
+
+        value_int_all = data["int_all_constraints"]
+        assert value_int_all > 0
+        assert value_int_all <= 100
+        assert value_int_all % 10 == 0
+
+
+def test_generate_float_constraints():
+    for _ in range(10):
+        data = generate_fake_data_for_model(ConstrainedNumbersModel, seed=random.randint(1, 10000))
+        assert data["float_gt"] > 10.5
+        assert data["float_ge"] >= 5.25
+        assert data["float_lt"] < 20.75
+        assert data["float_le"] <= 15.5
+        assert 100.0 < data["float_gt_lt"] < 100.1
+        assert 50.0 <= data["float_ge_le"] <= 50.5
+        import math
+
+        assert math.isclose(data["float_multiple_of"] % 0.5, 0.0) or math.isclose(data["float_multiple_of"] % 0.5, 0.5)
+
+        value_float_all = data["float_all_constraints"]
+        assert value_float_all > 1.0
+        assert value_float_all <= 10.0
+        import math
+
+        assert math.isclose(value_float_all % 2.5, 0.0) or math.isclose(value_float_all % 2.5, 2.5)
+
+
+def test_generate_string_constraints():
+    for _ in range(10):
+        data = generate_fake_data_for_model(ConstrainedStringsModel, seed=random.randint(1, 10000))
+        assert len(data["str_min_len"]) >= 5
+        assert len(data["str_max_len"]) <= 10
+        assert 3 <= len(data["str_min_max_len"]) <= 7
+
+
+def test_generate_list_constraints():
+    for _ in range(10):
+        data = generate_fake_data_for_model(ConstrainedListsModel, seed=random.randint(1, 10000))
+        assert len(data["list_min_items"]) >= 2
+        assert len(data["list_max_items"]) <= 4
+        assert 1 <= len(data["list_min_max_items"]) <= 3
+        assert all(isinstance(x, int) for x in data["list_min_items"])
+        assert all(isinstance(x, str) for x in data["list_max_items"])
+        assert all(isinstance(x, bool) for x in data["list_min_max_items"])

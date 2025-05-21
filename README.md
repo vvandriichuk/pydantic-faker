@@ -29,8 +29,6 @@ Inspired by the need for a simple, CLI-first way to leverage Pydantic's schema d
 pip install pydantic-faker
 ```
 
-(Note: Until the first version is published on PyPI, you might need to install from source or wait for the official release.)
-
 ## Quick Start
 
 Define your Pydantic models in a Python file (e.g., my_models.py in your project's root directory):

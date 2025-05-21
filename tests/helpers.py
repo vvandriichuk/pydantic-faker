@@ -65,3 +65,35 @@ class ModelWithPydanticTypes(BaseModel):
     contact_email: EmailStr
     personal_website: HttpUrl
     generic_link: str
+
+
+class ConstrainedNumbersModel(BaseModel):
+    int_gt: int = Field(gt=10)
+    int_ge: int = Field(ge=5)
+    int_lt: int = Field(lt=20)
+    int_le: int = Field(le=15)
+    int_gt_lt: int = Field(gt=100, lt=110)
+    int_ge_le: int = Field(ge=50, le=55)
+    int_multiple_of: int = Field(multiple_of=7)
+    int_all_constraints: int = Field(gt=0, le=100, multiple_of=10)
+
+    float_gt: float = Field(gt=10.5)
+    float_ge: float = Field(ge=5.25)
+    float_lt: float = Field(lt=20.75)
+    float_le: float = Field(le=15.5)
+    float_gt_lt: float = Field(gt=100.0, lt=100.1)
+    float_ge_le: float = Field(ge=50.0, le=50.5)
+    float_multiple_of: float = Field(multiple_of=0.5)
+    float_all_constraints: float = Field(gt=1.0, le=10.0, multiple_of=2.5)
+
+
+class ConstrainedStringsModel(BaseModel):
+    str_min_len: str = Field(min_length=5)
+    str_max_len: str = Field(max_length=10)
+    str_min_max_len: str = Field(min_length=3, max_length=7)
+
+
+class ConstrainedListsModel(BaseModel):
+    list_min_items: list[int] = Field(min_length=2)
+    list_max_items: list[str] = Field(max_length=4)
+    list_min_max_items: list[bool] = Field(min_length=1, max_length=3)

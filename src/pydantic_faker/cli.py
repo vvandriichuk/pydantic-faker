@@ -107,7 +107,7 @@ def generate(
     typer.echo("🎉 Generation complete!")
 
 
-@app.command(hidden=True)  # Скрываем команду, пока она не реализована
+@app.command(hidden=True)
 def serve(
     model_path: Annotated[str, typer.Argument(help="Path to Pydantic model.")],
 ) -> None:
