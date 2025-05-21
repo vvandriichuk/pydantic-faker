@@ -1,6 +1,6 @@
 [project]
 name = "pydantic-faker"
-version = "0.2.0"
+version = "0.3.0"
 description = "A CLI tool to generate fake data from Pydantic models."
 authors = [
     { name = "Viktor Andriichuk", email = "v.andriichuk@gmail.com" },
@@ -24,6 +24,8 @@ dependencies = [
     "faker>=37.0.0,<38.0.0",
     "rich>=13.0.0,<15.0.0",
     "pydantic[email]>=2.0.0,<4.0.0",
+    "fastapi>=0.90.0,<0.112.0",
+    "uvicorn[standard]>=0.20.0,<0.30.0",
 ]
 
 [project.urls]
@@ -125,7 +127,7 @@ reportMissingImports = true
 pythonVersion = "3.12"
 reportUnusedImport = true
 reportUnusedClass = true
-reportUnusedFunction = true
+reportUnusedFunction = false
 reportUnusedVariable = true
 reportDuplicateImport = true
 reportOptionalMemberAccess = false

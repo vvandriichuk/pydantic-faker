@@ -4,7 +4,8 @@ from typing import Annotated
 
 import typer
 
-from pydantic_faker.core import generate_fake_data_for_model, load_pydantic_model
+from .core import generate_fake_data_for_model, load_pydantic_model
+from .server import run_server
 
 app = typer.Typer(
     name="pydantic-faker",
@@ -107,12 +108,48 @@ def generate(
     typer.echo("🎉 Generation complete!")
 
 
-@app.command(hidden=True)
+@app.command()
 def serve(
-    model_path: Annotated[str, typer.Argument(help="Path to Pydantic model.")],
+    model_path: Annotated[
+        str,
+        typer.Argument(help="Path to the Pydantic model, e.g., 'my_module:MyModel'."),
+    ],
+    count: Annotated[
+        int,
+        typer.Option("--count", "-c", help="Number of fake data instances per model.", min=1, show_default=True),
+    ] = 10,
+    faker_locale: Annotated[
+        str | None,
+        typer.Option("--faker-locale", "-l", help="Locale for Faker.", show_default=False),
+    ] = None,
+    seed: Annotated[
+        int | None,
+        typer.Option("--seed", "-s", help="Random seed for reproducibility.", show_default=False),
+    ] = None,
+    host: Annotated[
+        str,
+        typer.Option(help="Host to bind the server to."),
+    ] = "127.0.0.1",
+    port: Annotated[
+        int,
+        typer.Option(help="Port to run the server on."),
+    ] = 8000,
 ) -> None:
     """
-    (Not Implemented Yet) Generates fake data and serves it via a local HTTP mock API.
+    Generates fake data and serves it via a local HTTP mock API.
     """
-    typer.secho("🚧 The 'serve' command is under construction. Coming soon!", fg=typer.colors.YELLOW)
-    typer.echo(f"Would serve model: {model_path}")
+    typer.secho(f"🚀 Starting mock API server for model at: {model_path}", fg=typer.colors.CYAN)
+    typer.echo(f"   Serving {count} fake instance(s).")
+    if faker_locale:
+        typer.echo(f"   🌍 Using Faker locale: {faker_locale}")
+    if seed is not None:
+        typer.echo(f"   🌱 Using random seed: {seed}")
+
+    run_server(
+        model_path_str=model_path,
+        count=count,
+        faker_locale=faker_locale,
+        seed=seed,
+        host=host,
+        port=port,
+    )
