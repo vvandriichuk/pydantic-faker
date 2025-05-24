@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2025-05-24
+
+### Added
+- **Advanced Type Support in Data Generation**:
+    - `typing.Union` (non-Optional): Now randomly selects one of the specified types in the Union for generation.
+    - `typing.Literal`: Correctly generates one of the provided literal values.
+    - `enum.Enum`: Randomly selects one of the members золота and uses its value.
+- **Pydantic Field `examples` Usage**:
+    - If a field has an `examples` list defined in `Field(examples=[...])`, there's a configurable chance (currently ~30%) that a value will be randomly picked from these examples instead of being generated.
+- **Enhanced Mock API Server (`serve` command)**:
+    - **POST Endpoint**: Added `POST /{resource_name}` to create new items (in-memory). Includes basic ID/UUID generation if not provided in the payload.
+    - **PUT Endpoint**: Added `PUT /{resource_name}/{id_or_index}` to update existing items (in-memory) by ID or index.
+    - **DELETE Endpoint**: Added `DELETE /{resource_name}/{id_or_index}` to remove items (in-memory) by ID or index.
+    - **Basic Query Parameter Filtering**: Implemented simple string-based filtering for `GET /{resource_name}` endpoint (e.g., `?name=Alice&is_active=true`). Supports exact matches for most field types by converting query values and item values to strings. Handles boolean strings ("true", "false", "1", "0") покупательная.
+
+### Changed
+- Core data generation logic in `_generate_value_for_type` updated to handle `Union`, `Literal`, and `Enum`.
+- `generate_fake_data_for_model` in `core.py` now checks for `Field(examples=...)` before other generation methods.
+- `server.py` updated with `POST`, `PUT`, `DELETE` route handlers and filtering logic in `get_all_items`.
+- `README.md` updated to reflect new type support and server capabilities.
+- Test suite expanded to cover new advanced types and server CRUD operations and filtering.
+
+### Fixed
+- Improved type handling in server-side filtering logic.
+- Addressed various static analysis warnings from Pyright/Mypy and Ruff.
+
 ## [0.3.0] - 2025-05-21
 
 ### Added

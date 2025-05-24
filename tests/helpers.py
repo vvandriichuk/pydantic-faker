@@ -1,5 +1,6 @@
 from datetime import date, datetime, time
-from typing import Any
+from enum import Enum
+from typing import Any, Literal
 from uuid import UUID
 
 from pydantic import BaseModel, EmailStr, Field, HttpUrl
@@ -97,3 +98,21 @@ class ConstrainedListsModel(BaseModel):
     list_min_items: list[int] = Field(min_length=2)
     list_max_items: list[str] = Field(max_length=4)
     list_min_max_items: list[bool] = Field(min_length=1, max_length=3)
+
+
+class StatusEnum(Enum):
+    ACTIVE = "active"
+    INACTIVE = "inactive"
+    PENDING = "pending"
+
+
+class AdvancedTypesModel(BaseModel):
+    direction: Literal["north", "south", "east", "west"]
+    status: StatusEnum
+    mixed_type: int | str | bool
+
+
+class ModelWithExamples(BaseModel):
+    status: str = Field(examples=["active", "pending", "archived"])
+    priority: int = Field(default=1, examples=[1, 2, 3, 4, 5])
+    tags: list[str] = Field(default_factory=list, examples=[["tag1", "tag2"], ["urgent"]])

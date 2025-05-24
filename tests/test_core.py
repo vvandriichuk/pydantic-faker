@@ -6,7 +6,15 @@ from pydantic import BaseModel
 
 from pydantic_faker.core import generate_fake_data_for_model, get_faker_instance, load_pydantic_model
 
-from .helpers import ConstrainedListsModel, ConstrainedNumbersModel, ConstrainedStringsModel, SimpleTestModel
+from .helpers import (
+    AdvancedTypesModel,
+    ConstrainedListsModel,
+    ConstrainedNumbersModel,
+    ConstrainedStringsModel,
+    ModelWithExamples,
+    SimpleTestModel,
+    StatusEnum,
+)
 
 
 def test_load_pydantic_model_success():
@@ -180,3 +188,89 @@ def test_generate_list_constraints():
         assert all(isinstance(x, int) for x in data["list_min_items"])
         assert all(isinstance(x, str) for x in data["list_max_items"])
         assert all(isinstance(x, bool) for x in data["list_min_max_items"])
+
+
+def test_generate_literal_type():
+    """Tests generation for Literal types."""
+    possible_directions = {"north", "south", "east", "west"}
+    generated_directions = set()
+    for i in range(20):
+        data = generate_fake_data_for_model(AdvancedTypesModel, seed=i)
+        assert "direction" in data
+        assert data["direction"] in possible_directions
+        generated_directions.add(data["direction"])
+    assert len(generated_directions) > 1, "Should generate multiple different literal values over iterations"
+    if len(possible_directions) <= 20:
+        assert generated_directions == possible_directions, "Should eventually generate all literal values"
+
+
+def test_generate_enum_type():
+    """Tests generation for Enum types."""
+    possible_status_values = {member.value for member in StatusEnum}
+    generated_statuses = set()
+    for i in range(20):
+        data = generate_fake_data_for_model(AdvancedTypesModel, seed=i)
+        assert "status" in data
+        assert data["status"] in possible_status_values
+        generated_statuses.add(data["status"])
+    assert len(generated_statuses) > 1, "Should generate multiple different enum values over iterations"
+    if len(possible_status_values) <= 20:
+        assert generated_statuses == possible_status_values, "Should eventually generate all enum values"
+
+
+def test_generate_union_type():
+    """Tests generation for Union[int, str, bool] types."""
+    generated_types = set()
+    found_int = False
+    found_str = False
+    found_bool = False
+
+    for i in range(50):
+        data = generate_fake_data_for_model(AdvancedTypesModel, seed=i)
+        assert "mixed_type" in data
+        value = data["mixed_type"]
+
+        is_valid_type = isinstance(value, int | str | bool)
+        assert is_valid_type, f"Generated type {type(value)} is not in Union[int, str, bool]"
+
+        if isinstance(value, int):
+            found_int = True
+        if isinstance(value, str):
+            found_str = True
+        if isinstance(value, bool):
+            found_bool = True
+
+        generated_types.add(type(value))
+
+    assert int in generated_types, "Integer type was not generated for Union"
+    assert str in generated_types, "String type was not generated for Union"
+    assert bool in generated_types, "Boolean type was not generated for Union"
+
+    assert found_int, "Integer type was not generated for Union"
+    assert found_str, "String type was not generated for Union"
+    assert found_bool, "Boolean type was not generated for Union"
+
+
+def test_generate_uses_field_examples():
+    model_class = ModelWithExamples
+    example_field_name = "status"
+    possible_examples = set(model_class.model_fields[example_field_name].examples or [])
+
+    generated_from_examples_count = 0
+    generated_other_count = 0
+    total_runs = 200
+
+    for i in range(total_runs):
+        data = generate_fake_data_for_model(model_class, seed=i)
+        generated_value = data[example_field_name]
+
+        if generated_value in possible_examples:
+            generated_from_examples_count += 1
+        else:
+            generated_other_count += 1
+            assert isinstance(generated_value, str)
+
+    assert generated_from_examples_count > 0, "No values were generated from examples list"
+    assert generated_other_count > 0, "Only values from examples list were generated"
+
+    print(f"Generated from examples: {generated_from_examples_count}/{total_runs}")

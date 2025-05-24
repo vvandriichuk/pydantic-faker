@@ -1,12 +1,12 @@
 import importlib
 import random
 import sys
-import types
-import typing
 import uuid
 from datetime import UTC, date, datetime, time
+from enum import Enum
 from pathlib import Path
-from typing import Any, get_args, get_origin
+from types import UnionType
+from typing import Any, Literal, Union, get_args, get_origin
 
 import typer
 from faker import Faker
@@ -101,6 +101,7 @@ def generate_fake_data_for_model(
         "safe_email": lambda: current_faker_instance.safe_email(),  # example.org, example.com, example.net
         "free_email": lambda: current_faker_instance.free_email(),  # gmail.com, hotmail.com
         "company_email": lambda: current_faker_instance.company_email(),
+        "website": lambda: current_faker_instance.url(),
         "phone_number": lambda: current_faker_instance.phone_number(),
         # Адреса
         "address": lambda: current_faker_instance.address(),
@@ -164,13 +165,15 @@ def generate_fake_data_for_model(
         current_field_annotation = field_info.annotation
         origin_type = get_origin(current_field_annotation)
         type_args = get_args(current_field_annotation)
-        is_optional = origin_type in (typing.Union, types.UnionType) and type(None) in type_args
+        is_optional = origin_type in (Union, UnionType) and type(None) in type_args
 
         field_type_for_generation: Any
+
         if is_optional:
-            if random.choice([True, False]):
+            if random.random() < 0.5:
                 data[field_name] = None
                 continue
+
             actual_type_args = [arg for arg in type_args if arg is not type(None)]
             if not actual_type_args:
                 data[field_name] = None
@@ -178,6 +181,18 @@ def generate_fake_data_for_model(
             field_type_for_generation = actual_type_args[0]
         else:
             field_type_for_generation = current_field_annotation
+
+        field_examples = getattr(field_info, "examples", None)
+        use_example_value = False
+        chosen_example_value = None
+
+        if field_examples and isinstance(field_examples, list) and len(field_examples) > 0 and random.random() < 0.3:
+            chosen_example_value = random.choice(field_examples)
+            use_example_value = True
+
+        if use_example_value:
+            data[field_name] = chosen_example_value
+            continue
 
         if field_name in FAKER_FIELD_NAME_MAP:
             generated_value_by_name = FAKER_FIELD_NAME_MAP[field_name]()
@@ -271,6 +286,7 @@ def generate_fake_data_for_model(
                 field_type_for_generation,
                 current_faker_instance,
                 field_info,
+                field_name,
             )
 
     return data
@@ -280,15 +296,36 @@ def _generate_value_for_type(
     field_type_to_generate: Any,
     faker_instance: Faker,
     field_info: Any | None = None,
+    field_name_for_debug: str = "unknown_field",
 ) -> Any:
     """
     Helper function to generate a single value for a given *basic* type
     or recursively call for nested Pydantic models.
     Uses field_info to apply constraints if available.
     """
+    origin = get_origin(field_type_to_generate)
+    args = get_args(field_type_to_generate)
+
+    if origin is Literal:  # typing.Literal
+        if args:
+            return random.choice(args)
+        return f"unsupported_type_empty_literal_{field_type_to_generate!s}"
+
+    if isinstance(field_type_to_generate, type) and issubclass(field_type_to_generate, Enum):
+        enum_members = list(field_type_to_generate)
+        if enum_members:
+            chosen_member = random.choice(enum_members)
+            return chosen_member.value
+        return f"unsupported_type_empty_enum_{field_type_to_generate.__name__}"
+
+    if origin in (Union, UnionType):
+        if args:
+            chosen_type = random.choice(args)
+            return _generate_value_for_type(chosen_type, faker_instance, None, f"{field_name_for_debug}_union_choice")
+        return f"unsupported_type_empty_union_{field_type_to_generate!s}"
+
     gt_val, ge_val, lt_val, le_val, multiple_of_val = None, None, None, None, None
     min_length_val, max_length_val = None, None
-
     if field_info:
         min_length_val = getattr(field_info, "min_length", None)
         max_length_val = getattr(field_info, "max_length", None)
@@ -297,7 +334,6 @@ def _generate_value_for_type(
         lt_val = getattr(field_info, "lt", None)
         le_val = getattr(field_info, "le", None)
         multiple_of_val = getattr(field_info, "multiple_of", None)
-
         if hasattr(field_info, "metadata"):
             for constraint_obj in field_info.metadata:
                 if hasattr(constraint_obj, "gt") and constraint_obj.gt is not None:
@@ -318,9 +354,6 @@ def _generate_value_for_type(
     if field_type_to_generate is int:
         min_val_default = 0
         max_val_default = 1000
-
-        min_val = min_val_default
-        max_val = max_val_default
 
         min_val = max(min_val_default, ge_val) if ge_val is not None else min_val_default
 
@@ -359,8 +392,6 @@ def _generate_value_for_type(
     if field_type_to_generate is float:
         min_val_f_default = 0.0
         max_val_f_default = 1000.0
-        min_val_f = min_val_f_default
-        max_val_f = max_val_f_default
 
         min_val_f = max(min_val_f_default, ge_val) if ge_val is not None else min_val_f_default
         if gt_val is not None:
