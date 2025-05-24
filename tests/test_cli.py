@@ -1,5 +1,6 @@
 import json
 from pathlib import Path
+from unittest import mock
 
 import pytest
 from typer.testing import CliRunner
@@ -86,6 +87,55 @@ def test_generate_with_locale():
         pytest.fail(f"Locale output processing error: {e}\nOutput: {result.stdout}")
 
 
-# TODO: Add test for serve command (when it is implemented)
-# TODO: Add tests for various options of generate command (count, etc)
-# TODO: Add tests for CLI script errors (invalid model path, etc)
+@mock.patch("pydantic_faker.cli.run_server")
+def test_serve_command_calls_run_server(mock_run_server):
+    """Tests that the 'serve' command calls the run_server function with correct defaults."""
+    model_arg = "test_models:SimpleUser"
+    result = runner.invoke(app, ["serve", model_arg])
+
+    assert result.exit_code == 0
+
+    mock_run_server.assert_called_once_with(
+        model_path_str=model_arg,
+        count=10,
+        faker_locale=None,
+        seed=None,
+        host="127.0.0.1",
+        port=8000,
+    )
+
+
+@mock.patch("pydantic_faker.cli.run_server")
+def test_serve_command_with_options(mock_run_server):
+    """Tests the 'serve' command with custom options."""
+    model_arg = "test_models:ComplexOrder"
+    custom_port = 8088
+    custom_count = 7
+    custom_locale = "fr_FR"
+    custom_seed = 777
+
+    result = runner.invoke(
+        app,
+        [
+            "serve",
+            model_arg,
+            "--port",
+            str(custom_port),
+            "--count",
+            str(custom_count),
+            "--faker-locale",
+            custom_locale,
+            "--seed",
+            str(custom_seed),
+        ],
+    )
+
+    assert result.exit_code == 0
+    mock_run_server.assert_called_once_with(
+        model_path_str=model_arg,
+        count=custom_count,
+        faker_locale=custom_locale,
+        seed=custom_seed,
+        host="127.0.0.1",
+        port=custom_port,
+    )
